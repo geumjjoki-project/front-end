@@ -5,8 +5,13 @@
     <!-- 나의 지출 내역 개요 -->
     <div
       class="rounded-4xl shadow-[0px_8px_14px_2px_rgba(0,_0,_0,_0.35)] justify-items-center px-3 pt-0 pb-7.5 mb-4 w-full">
-      <div class="">
-        <h1 class="h1 text-center text-cocoa-600 fw-black my-7">1,500,000원</h1>
+      <div v-if="isLoaded">
+        <h1 class="h1 text-center text-cocoa-600 fw-black my-7">{{ totalAmount.toLocaleString() }}원</h1>
+      </div>
+      <div v-else>
+        <h1 class="h1 text-center text-cocoa-600 fw-black my-7">
+          로딩 중...
+        </h1>
       </div>
       <div class="w-full rounded-3xl bg-gold-200 px-4.5 py-5 text-cocoa-600 h4">
         <p>나의 1월 소비는</p>
@@ -32,11 +37,11 @@
         <p class="h4">이번달 나의 지출은?</p>
       </div>
       <div class="-mx-6 mt-6.5">
-        <Swiper :modules="[FreeMode]" freeMode :slides-per-view="'auto'" :slides-offset-before="24"
-          :slides-offset-after="0" :space-between="24" grabCursor class="px-4 py-2">
-          <SwiperSlide v-for="item in categories" :key="item.id"
+        <Swiper :modules="[]" :slides-per-view="'auto'" :space-between="24" :slides-offset-before="24"
+          :slides-offset-after="24" grabCursor class="px-4 py-2">
+          <SwiperSlide v-for="item in parentCategories" :key="item.parent"
             class="!w-[160px] !h-[160px] rounded-4xl bg-gold-100 p-2">
-            <p class="p-4 mb-3 font-black text-cocoa-600">{{ item.title }}</p>
+            <p class="p-4 mb-3 font-black text-cocoa-600">{{ item.parent }}</p>
             <h3 class="h3 text-center text-cocoa-600 fw-black">
               {{ item.amount.toLocaleString() }}원
             </h3>
@@ -64,23 +69,25 @@
 import TopNavBar from '@/components/navbar/TopNavBar.vue'
 import NavBar from '@/components/navbar/NavBar.vue'
 import UpIcon from '@/components/common/icons/UpIcon.vue'
-
 import { ref } from 'vue'
+import { onMounted } from 'vue'
+import expenseService from '@/services/api/expenseService'
+
+const parentCategories = ref<{ parent: string, amount: number }[]>([])
+const totalAmount = ref(0)
+const isLoaded = ref(false)
+
+onMounted(async () => {
+  const { categories, totalAmount: sum } = await expenseService.getSummary()
+  parentCategories.value = categories
+  totalAmount.value = sum
+  isLoaded.value = true
+})
 
 const isIncrease = ref(false)
 
-const categories = ref([
-  { id: 1, title: '카테고리 1', amount: 100000 },
-  { id: 2, title: '카테고리 2', amount: 200000 },
-  { id: 3, title: '카테고리 3', amount: 300000 },
-  { id: 4, title: '카테고리 4', amount: 300000 },
-  { id: 5, title: '카테고리 5', amount: 300000 },
-])
-
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { FreeMode } from 'swiper/modules'
 import 'swiper/css'
-import 'swiper/css/free-mode'
 
 const menus = [
   { name: '분석', to: 'analysis' },

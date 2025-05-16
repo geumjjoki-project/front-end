@@ -5,7 +5,14 @@
     <!-- 총 지출 금액 -->
     <div class="w-full rounded-3xl bg-gold-200 text-cocoa-600 mb-7">
       <p class="font-bold pl-4 pt-2">총 지출 금액</p>
-      <h1 class="h1 text-center fw-black mb-7.5">{{ totalAmount.toLocaleString() }}원</h1>
+      <div v-if="isLoaded">
+        <h1 class="h1 text-center fw-black mb-7.5">{{ expenseStore.totalAmount.toLocaleString() }}원</h1>
+      </div>
+      <div v-else>
+        <h1 class="h1 text-center fw-black mb-7.5">
+          로딩 중...
+        </h1>
+      </div>
     </div>
 
     <!-- 조회 조건 -->
@@ -53,14 +60,14 @@
     <!-- 조회 결과 -->
     <div class="w-full font-semibold">
       <div class="flex justify-between mb-9 px-6 font-black">
-        <p>총 {{ expenseList.length }}건</p>
-        <p>{{ totalAmount.toLocaleString() }}원</p>
+        <p>총 {{ expenseStore.totalCount }}건</p>
+        <p>{{ expenseStore.totalAmount.toLocaleString() }}원</p>
       </div>
       <div class="flex flex-col space-y-7">
-        <div v-for="expense in expenseList.slice(0, visibleCount)" :key="expense.id"
-          class="flex justify-between px-6 items-center" @click="goToDetail(expense.id)">
+        <div v-for="expense in expenseStore.expenses" :key="expense.expense_id" class="flex justify-between px-6 items-center"
+          @click="goToDetail(expense.expense_id)">
           <div>
-            <p>{{ expense.category }}</p>
+            <p>{{ expense.category?.name || '미분류' }}</p>
             <p>{{ expense.description }}</p>
           </div>
           <div class="font-black">
@@ -69,8 +76,8 @@
         </div>
       </div>
     </div>
-    <div v-if="visibleCount < expenseList.length" class="flex items-center space-x-4 cursor-pointer mb-24"
-      @click="expandFilter">
+    <div v-if="expenseStore.hasNext" class="flex items-center space-x-4 cursor-pointer mb-24"
+      @click="expandList">
       <span class="text-gray-700 font-black">더보기
       </span>
       <DownIcon />
@@ -86,6 +93,18 @@ import DownArrow from '@/components/common/icons/DownArrow.vue'
 import DownIcon from '@/components/common/icons/DownIcon.vue'
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { onMounted } from 'vue'
+import { useExpenseStore } from '@/stores/expenseStore'
+
+const expenseStore = useExpenseStore()
+
+const isLoaded = ref(false)
+
+onMounted(async () => {
+  await expenseStore.fetchExpenses()
+  isLoaded.value = true
+})
+
 
 const menus = [
   { name: '분석', to: 'analysis' },
@@ -125,26 +144,19 @@ const toggleFilter = () => {
 const route = useRoute()
 const router = useRouter()
 
-const goToDetail = item => {
-  router.push(route.path + '/' + item)
+const goToDetail = (expenseId: number) => {
+  router.push(`/expense/status/${expenseId}`)
 }
 
-const expenseList = ref(
-  Array.from({ length: 30 }, (_, i) => ({
-    id: i + 1,
-    category: `카테고리 ${i + 1}`,
-    description: `설명 ${i + 1}`,
-    amount: (i + 1) * 10000,
-  }))
-)
+const visibleCount = ref(5)
 
-const totalAmount = computed(() => expenseList.value.reduce((acc, expense) => acc + expense.amount, 0))
+const expenseList = computed(() => expenseStore.expenses || [])
+const visibleExpenses = computed(() => expenseList.value.slice(0, visibleCount.value))
 
-const PAGE_SIZE = 5
-const visibleCount = ref(PAGE_SIZE)
-
-const expandFilter = () => {
-  visibleCount.value = Math.min(visibleCount.value + PAGE_SIZE, expenseList.value.length)
+const expandList = async () => {
+  if (expenseStore.hasNext && !expenseStore.isLoading) {
+    await expenseStore.fetchExpenses(expenseStore.currentPage + 1, 5)
+  }
 }
 </script>
 

@@ -6,8 +6,8 @@
     <div class="w-full px-3 mt-18">
       <!-- 제목 -->
       <div>
-        <h4 class="h4">제목</h4>
-        <h3 class="h3">100,000원</h3>
+        <h4 class="h4">{{ isLoaded && expense.data.category.name }}</h4>
+        <h3 class="h3">{{ isLoaded && expense.data.amount.toLocaleString() }}원</h3>
       </div>
       <!-- 구분선 -->
       <div class="w-full px-1 h-13 flex items-center">
@@ -22,35 +22,35 @@
               <h4 class="h4">카테고리 설정</h4>
             </div>
             <div class="flex justify-center items-center" @click="toggleIsCategoryOpen">
-              <h4 class="h4">카테고리명</h4>
+              <h4 class="h4">{{ isLoaded && expense.data.category.parent }}</h4>
               <BackIcon color="black" class="cursor-pointer inline-block rotate-180" :width="'20'" :height="'24'">
               </BackIcon>
             </div>
           </div>
           <div class="flex justify-between items-center">
             <div>
-              <h4 class="h4">메모</h4>
+              <h4 class="h4">설명</h4>
             </div>
             <div class="flex justify-center items-center" @click="toggleIsMemoOpen">
-              <h4 class="h4">메모 내용</h4>
+              <h4 class="h4">{{ isLoaded && expense.data.description }}</h4>
               <BackIcon color="black" class="cursor-pointer inline-block rotate-180" :width="'20'" :height="'24'">
               </BackIcon>
             </div>
           </div>
-          <div class="flex justify-between items-center">
+          <!-- <div class="flex justify-between items-center">
             <div>
               <h4 class="h4">결제 수단</h4>
             </div>
             <div class="flex justify-center items-center">
               <h4 class="h4">국민카드</h4>
             </div>
-          </div>
+          </div> -->
           <div class="flex justify-between items-center">
             <div>
               <h4 class="h4">결제 일시</h4>
             </div>
             <div class="flex justify-center items-center">
-              <h4 class="h4">2025.03.21</h4>
+              <h4 class="h4">{{ isLoaded && expense.data.date }}</h4>
             </div>
           </div>
         </div>
@@ -86,12 +86,12 @@
     class="z-5 absolute top-0 left-0 w-full h-screen bg-gray-300/70">
   </div>
 
-  <!-- 메모 변경 모달 -->
+  <!-- 설명 변경 모달 -->
   <div v-show="isMemoOpen"
     class="absolute w-full bottom-0 z-30 shadow-[0px_8px_14px_2px_rgba(0,_0,_0,_0.35)] rounded-t-3xl bg-gray-200 h-90">
     <div class="flex w-full items-center px-8 pt-8">
       <div class="flex-1"></div>
-      <h3 class="h3 flex text-center">메모</h3>
+      <h3 class="h3 flex text-center">설명</h3>
       <div class="flex-1 flex justify-end">
         <XIcon @click="toggleIsMemoOpen" />
       </div>
@@ -115,7 +115,25 @@
 import TopNavBar from '@/components/navbar/TopNavBar.vue'
 import BackIcon from '@/components/common/icons/BackIcon.vue'
 import XIcon from '@/components/common/icons/XIcon.vue'
-import { ref } from 'vue'
+import expenseService from '@/services/api/expenseService'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const expenseId = Number(route.params.id)
+
+const expense = ref<any>(null)
+const isLoaded = ref(false)
+
+
+onMounted(async () => {
+  try {
+    const response = await expenseService.getExpenseDetail(expenseId)
+    expense.value = response
+  } finally {
+    isLoaded.value = true
+  }
+})
 
 const menus = [
   { name: '분석', to: 'analysis' },
